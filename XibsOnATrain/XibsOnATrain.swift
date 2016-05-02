@@ -18,7 +18,8 @@ class XibsOnATrain: NSObject {
         self.bundle = bundle
 
         super.init()
-        center.addObserver(self, selector: #selector(self.createMenuItems), name: NSApplicationDidFinishLaunchingNotification, object: nil)
+        
+        center.addObserver(self, selector: #selector(self.handleNotification(_:)), name: nil, object: nil)
     }
 
     deinit {
@@ -28,24 +29,33 @@ class XibsOnATrain: NSObject {
     func removeObserver() {
         center.removeObserver(self)
     }
-
-    func createMenuItems() {
-        removeObserver()
-
-        guard let mainMenu = NSApp.mainMenu else { return }
-        guard let item = mainMenu.itemWithTitle("Edit") else { return }
-        guard let submenu = item.submenu else { return }
-
-        let actionMenuItem = NSMenuItem(title:"Do Action", action:#selector(self.doMenuAction), keyEquivalent:"")
-        actionMenuItem.target = self
-
-        submenu.addItem(NSMenuItem.separatorItem())
-        submenu.addItem(actionMenuItem)
+    
+    var timer: NSTimer?
+    
+    func handleNotification(notification: NSNotification) {
+        print("name: \(notification.name)")
+        if notification.name == "IDEEditorContextWillOpenNavigableItemNotification" ||
+            notification.name == "NSApplicationDidFinishLaunchingNotification" {
+            
+            timer?.invalidate()
+            timer = NSTimer.scheduledTimerWithTimeInterval(0.5, target: self, selector: #selector(self.shake(_:)), userInfo: nil, repeats: true)
+        }
     }
+    
+    func shake(timer: NSTimer) {
+        let lowerValue: Int = -20
+        
+        let range: UInt32 = 40
+        let xOffset: CGFloat = CGFloat(arc4random_uniform(range)) + CGFloat(lowerValue)
+        let yOffset: CGFloat = CGFloat(arc4random_uniform(range)) + CGFloat(lowerValue)
 
-    func doMenuAction() {
-        let error = NSError(domain: "Hello World!", code:42, userInfo:nil)
-        NSAlert(error: error).runModal()
+        if let window = NSApplication.sharedApplication().mainWindow {
+            var origin = window.frame.origin
+            origin.x += xOffset
+            origin.y += yOffset
+            
+            window.setFrameOrigin(origin)
+        }
     }
 }
 
